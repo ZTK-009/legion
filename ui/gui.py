@@ -311,13 +311,13 @@ class Ui_MainWindow(object):
         log.addHandler(self.LogOutputTextView)
 
         # Python Tab - Disabled until next release
-        #self.PythonTab = QtWidgets.QWidget()
-        #self.PythonTab.setObjectName(_fromUtf8("PythonTab"))
-        #self.PythonOutputTextView = QtWidgets.QPlainTextEdit(self.PythonTab)
-        #self.PythonOutputTextView.setReadOnly(False)
-        #self.PythonTabLayout = QtWidgets.QHBoxLayout(self.PythonTab)
-        #self.PythonTabLayout.addWidget(self.PythonOutputTextView)
-        #self.BottomTabWidget.addTab(self.PythonTab, _fromUtf8(""))
+        self.PythonTab = QtWidgets.QWidget()
+        self.PythonTab.setObjectName(_fromUtf8("PythonTab"))
+        self.PythonOutputTextView = QtWidgets.QPlainTextEdit(self.PythonTab)
+        self.PythonOutputTextView.setReadOnly(False)
+        self.PythonTabLayout = QtWidgets.QHBoxLayout(self.PythonTab)
+        self.PythonTabLayout.addWidget(self.PythonOutputTextView)
+        self.BottomTabWidget.addTab(self.PythonTab, _fromUtf8(""))
 
     def setupMenuBar(self, MainWindow):
         self.menubar = QtWidgets.QMenuBar(MainWindow)
