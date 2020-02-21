@@ -26,6 +26,7 @@ from app.importers.NmapImporter import NmapImporter
 from app.importers.PythonImporter import PythonImporter
 from app.tools.nmap.NmapPaths import getNmapRunningFolder
 from ui.observers.QtUpdateProgressObserver import QtUpdateProgressObserver
+from scripts.python import pyShodan, macvendors
 
 try:
     import queue
@@ -258,6 +259,8 @@ class Controller:
                             self.view.createNewTabForHost(
                                 str(targetHosts), 'nmap (custom ' + nmapOptionsString + ')',
                                                           True))
+
+        #self.runPython('127.0.0.1')
 
     #################### CONTEXT MENUS ####################
 
@@ -693,16 +696,21 @@ class Controller:
 
         return qProcess.pid()  # return the pid so that we can kill the process if needed
 
-    def runPython(self):
-        textbox = self.view.createNewConsole("python")
+    def runPython(self, targetHosts):
+        log.info("runPython called")
+        self.pythonImporter.setHostIp(targetHosts)
+        self.pythonImporter.setPythonScript("pyShodan")
+        pyshodan_api_key = 'SNYEkE0gdwNu9BRURVDjWPXePCquXqht'
+        #textbox = self.view.createNewConsole("python")
         name = 'python'
         tabTitle = name
-        hostIp = '127.0.0.1'
+        hostIp = targetHosts
         port = '22'
         protocol = 'tcp'
-        command = 'python3 /mnt/c/Users/hackm/OneDrive/Documents/Customers/GVIT/GIT/legion/test.py'
+        command = '/bin/echo This would call to pyShodan or macvendors'
         startTime = getTimestamp(True)
         outputfile = '/tmp/a'
+        textbox = self.view.createNewTabForHost(str(targetHosts), 'python', True)
         qProcess = MyQProcess(name, tabTitle, hostIp, port, protocol, command, startTime, outputfile, textbox)
 
         processRepository = self.logic.activeProject.repositoryContainer.processRepository
