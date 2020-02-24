@@ -18,6 +18,7 @@ Copyright (c) 2020 GoVanguard
 
 import signal  # for file operations, to kill processes, for regex, for subprocesses
 import subprocess
+import ipaddress
 
 from app.ApplicationInfo import applicationInfo
 from app.Screenshooter import Screenshooter
@@ -259,8 +260,6 @@ class Controller:
                             self.view.createNewTabForHost(
                                 str(targetHosts), 'nmap (custom ' + nmapOptionsString + ')',
                                                           True))
-
-        #self.runPython('127.0.0.1')
 
     #################### CONTEXT MENUS ####################
 
@@ -683,7 +682,7 @@ class Controller:
             str(qProcess.readAllStandardOutput().data().decode('ISO-8859-1'))))
 
         qProcess.sigHydra.connect(self.handleHydraFindings)
-        qProcess.finished.connect(lambda: self.processFinished(qProcess))
+        qProcess.finished.connect(lambda: self.processFinished(qProcess, hostIp))
         qProcess.error.connect(lambda: self.processCrashed(qProcess))
         log.info("runCommand called for stage {0}".format(str(stage)))
 
@@ -696,26 +695,22 @@ class Controller:
 
         return qProcess.pid()  # return the pid so that we can kill the process if needed
 
-    def runPython(self, targetHosts):
+    def runPython(self, targetHosts, pythonScript):
         log.info("runPython called")
-        self.pythonImporter.setHostIp(targetHosts)
-        self.pythonImporter.setPythonScript("pyShodan")
-        pyshodan_api_key = 'SNYEkE0gdwNu9BRURVDjWPXePCquXqht'
         #textbox = self.view.createNewConsole("python")
         name = 'python'
         tabTitle = name
         hostIp = targetHosts
         port = '22'
         protocol = 'tcp'
-        command = '/bin/echo This would call to pyShodan or macvendors'
+        command = pythonScript
         startTime = getTimestamp(True)
         outputfile = '/tmp/a'
-        textbox = self.view.createNewTabForHost(str(targetHosts), 'python', True)
-        qProcess = MyQProcess(name, tabTitle, hostIp, port, protocol, command, startTime, outputfile, textbox)
+        textbox = self.view.createNewTabForHost(str(hostIp), 'python', True)
 
+        qProcess = MyQProcess(name, tabTitle, hostIp, port, protocol, command, startTime, outputfile, textbox)
         processRepository = self.logic.activeProject.repositoryContainer.processRepository
         textbox.setProperty('dbId', str(processRepository.storeProcess(qProcess)))
-
         log.info('Queuing: ' + str(command))
         self.fastProcessQueue.put(qProcess)
 
@@ -732,7 +727,7 @@ class Controller:
             str(qProcess.readAllStandardOutput().data().decode('ISO-8859-1'))))
 
         qProcess.sigHydra.connect(self.handleHydraFindings)
-        qProcess.finished.connect(lambda: self.processFinished(qProcess))
+        qProcess.finished.connect(lambda: self.processFinished(qProcess, hostIp))
         qProcess.error.connect(lambda: self.processCrashed(qProcess))
 
         return qProcess.pid()
@@ -807,7 +802,7 @@ class Controller:
 
     # this function handles everything after a process ends
     # def processFinished(self, qProcess, crashed=False):
-    def processFinished(self, qProcess):
+    def processFinished(self, qProcess, targetHosts):
         processRepository = self.logic.activeProject.repositoryContainer.processRepository
         try:
             if not processRepository.isKilledProcess(
@@ -816,7 +811,6 @@ class Controller:
                     # move tool output from runningfolder to output folder if there was an output file
                     self.logic.toolCoordinator.saveToolOutput(self.logic.activeProject.properties.outputFolder,
                                                           qProcess.outputfile)
-                    print(qProcess.command)
                     if 'nmap' in qProcess.command: # if the process was nmap, use the parser to store it
                         if qProcess.exitCode() == 0:                    # if the process finished successfully
                             newoutputfile = qProcess.outputfile.replace(
@@ -825,6 +819,13 @@ class Controller:
                             self.nmapImporter.setFilename(str(newoutputfile) + '.xml')
                             self.nmapImporter.setOutput(str(qProcess.display.toPlainText()))
                             self.nmapImporter.start()
+                            if '30000-65535' in qProcess.command:
+                                if ipaddress.ip_address(targetHosts).is_private:
+                                    pythonScript = '/bin/echo PythonScript macvendors'
+                                    self.runPython(targetHosts, pythonScript)
+                                else:
+                                    self.runPython(targetHosts, '/bin/echo PythonScript pyShodan')
+                                    self.runPython(targetHosts, '/bin/echo PythonScript macvendors')
                     elif 'PythonScript' in qProcess.command:
                         pythonScript = str(qProcess.command).split(' ')[2]
                         print('PythonImporter running for script: {0}'.format(pythonScript))
